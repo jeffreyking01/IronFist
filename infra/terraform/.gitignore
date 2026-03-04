@@ -1,0 +1,23 @@
+# Local state — never commit
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# Vars file with real values — never commit
+terraform.tfvars
+
+# Terraform working directories
+.terraform/
+.terraform.lock.hcl
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Sensitive outputs
+*.pem
+*.key
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
