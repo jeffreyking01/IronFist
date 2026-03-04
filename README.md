@@ -30,7 +30,8 @@ IronFist/
 │   └── vuln-mgmt-wireframe-v4.html   # Interactive UI wireframe (open in browser)
 └── docs/
     ├── ARCHITECTURE.md               # Full platform architecture decisions
-    └── REQUIREMENTS.md               # Functional and security requirements
+    ├── REQUIREMENTS.md               # Functional and security requirements
+    └── aws-architecture.html         # Personal AWS dev environment diagram (open in browser)
 ```
 
 ---

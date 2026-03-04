@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IronFist — Personal AWS Architecture</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+:root {
+  --bg:#080c14; --surface:#0d1420; --surface2:#111827;
+  --border:#1e2d45; --border2:#243550;
+  --text:#c9d8ee; --dim:#4e6480; --mid:#7a9ab8;
+  --blue:#1e6fff; --green:#00d68f; --yellow:#ffc53d;
+  --orange:#ff7b2e; --red:#ff4d4d; --purple:#a855f7;
+  --mono:'IBM Plex Mono',monospace; --sans:'IBM Plex Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;padding:32px;}
+
+h1{font-size:18px;font-weight:700;margin-bottom:4px;}
+.subtitle{font-size:12px;color:var(--dim);font-family:var(--mono);margin-bottom:28px;}
+
+/* Layout */
+.diagram{display:flex;flex-direction:column;gap:20px;}
+
+/* Zone wrapper */
+.zone{border-radius:12px;padding:18px 20px;position:relative;}
+.zone-label{font-family:var(--mono);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.zone-label::after{content:'';flex:1;height:1px;}
+
+.zone.internet{border:1px dashed #2a3f5f;background:rgba(30,111,255,0.02);}
+.zone.internet .zone-label{color:#3a5f8f;}
+.zone.internet .zone-label::after{background:#2a3f5f;}
+
+.zone.vpc{border:1px solid #1a3a1a;background:rgba(0,214,143,0.02);}
+.zone.vpc .zone-label{color:#2a7a4a;}
+.zone.vpc .zone-label::after{background:#1a3a1a;}
+
+.zone.public-subnet{border:1px dashed #1a3a2a;background:rgba(0,214,143,0.03);border-radius:8px;padding:14px 16px;}
+.zone.public-subnet .zone-label{color:#2a6a4a;font-size:8px;}
+.zone.public-subnet .zone-label::after{background:#1a3a2a;}
+
+.zone.private-subnet{border:1px dashed #1e2d45;background:rgba(30,111,255,0.03);border-radius:8px;padding:14px 16px;}
+.zone.private-subnet .zone-label{color:#2a4a7a;font-size:8px;}
+.zone.private-subnet .zone-label::after{background:#1e2d45;}
+
+.zone.external{border:1px dashed #3a2c00;background:rgba(255,197,61,0.02);border-radius:8px;padding:14px 16px;}
+.zone.external .zone-label{color:#7a6020;font-size:8px;}
+.zone.external .zone-label::after{background:#3a2c00;}
+
+.zone.home{border:1px dashed #2a1a3a;background:rgba(168,85,247,0.02);border-radius:8px;padding:14px 16px;}
+.zone.home .zone-label{color:#6a3a9a;font-size:8px;}
+.zone.home .zone-label::after{background:#2a1a3a;}
+
+/* Row layouts */
+.row{display:flex;gap:14px;align-items:flex-start;}
+.col{display:flex;flex-direction:column;gap:10px;flex:1;}
+
+/* Nodes */
+.node{background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:11px 13px;position:relative;}
+.node.blue{border-color:rgba(30,111,255,0.4);background:rgba(30,111,255,0.07);}
+.node.green{border-color:rgba(0,214,143,0.3);background:rgba(0,214,143,0.06);}
+.node.yellow{border-color:rgba(255,197,61,0.3);background:rgba(255,197,61,0.05);}
+.node.purple{border-color:rgba(168,85,247,0.3);background:rgba(168,85,247,0.06);}
+.node.orange{border-color:rgba(255,123,46,0.3);background:rgba(255,123,46,0.05);}
+.node.red{border-color:rgba(255,77,77,0.3);background:rgba(255,77,77,0.05);}
+
+.node-header{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+.node-icon{font-size:15px;flex-shrink:0;}
+.node-name{font-size:12px;font-weight:600;color:var(--text);}
+.node-type{font-family:var(--mono);font-size:9px;color:var(--dim);margin-left:auto;}
+.node-detail{font-size:10px;color:var(--mid);line-height:1.5;}
+.node-detail strong{color:var(--text);}
+.node-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;}
+.ntag{font-family:var(--mono);font-size:8px;padding:1px 6px;border-radius:3px;}
+.ntag.b{background:rgba(30,111,255,0.1);color:#6699ff;border:1px solid rgba(30,111,255,0.2);}
+.ntag.g{background:rgba(0,214,143,0.1);color:var(--green);border:1px solid rgba(0,214,143,0.2);}
+.ntag.y{background:rgba(255,197,61,0.1);color:var(--yellow);border:1px solid rgba(255,197,61,0.2);}
+.ntag.p{background:rgba(168,85,247,0.1);color:#c084fc;border:1px solid rgba(168,85,247,0.2);}
+.ntag.r{background:rgba(255,77,77,0.1);color:var(--red);border:1px solid rgba(255,77,77,0.2);}
+.ntag.o{background:rgba(255,123,46,0.1);color:var(--orange);border:1px solid rgba(255,123,46,0.2);}
+
+/* Arrows */
+.arrow-row{display:flex;align-items:center;justify-content:center;gap:6px;padding:4px 0;}
+.arrow-label{font-family:var(--mono);font-size:9px;color:var(--dim);}
+.arrow{color:var(--dim);font-size:16px;}
+.arrow.down{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.arrow-v{display:flex;flex-direction:column;align-items:center;padding:2px 0;}
+.arrow-line{width:1px;height:20px;background:var(--border2);}
+.arrow-head{color:var(--dim);font-size:12px;line-height:1;}
+
+/* Cost table */
+.cost-table{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-top:20px;}
+.cost-table h3{font-size:12px;font-weight:600;margin-bottom:12px;color:var(--text);}
+table{width:100%;border-collapse:collapse;}
+th{font-family:var(--mono);font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;padding:4px 8px;text-align:left;border-bottom:1px solid var(--border);}
+td{font-size:11px;padding:6px 8px;border-bottom:1px solid rgba(30,45,69,0.4);color:var(--mid);}
+tr:last-child td{border-bottom:none;font-weight:600;color:var(--text);}
+td:last-child{text-align:right;font-family:var(--mono);}
+th:last-child{text-align:right;}
+
+/* Migration note */
+.migration-note{background:rgba(255,197,61,0.04);border:1px solid rgba(255,197,61,0.2);border-radius:10px;padding:14px 18px;margin-top:14px;}
+.migration-note h3{font-size:12px;font-weight:600;color:var(--yellow);margin-bottom:8px;}
+.migration-note ul{list-style:none;display:flex;flex-direction:column;gap:5px;}
+.migration-note ul li{font-size:11px;color:var(--mid);display:flex;align-items:baseline;gap:8px;}
+.migration-note ul li::before{content:'→';color:var(--yellow);font-family:var(--mono);font-size:10px;flex-shrink:0;}
+</style>
+</head>
+<body>
+
+<h1>IronFist — Personal AWS Dev Environment</h1>
+<div class="subtitle">us-east-1 · Single-region · Minimal cost · Docker-based · GovCloud-migratable</div>
+
+<div class="diagram">
+
+  <!-- Internet / External actors -->
+  <div class="zone internet">
+    <div class="zone-label">External — Internet & Data Sources</div>
+    <div class="row">
+      <div class="node blue" style="flex:1.2">
+        <div class="node-header"><span class="node-icon">🌐</span><span class="node-name">Your Browser</span><span class="node-type">Developer</span></div>
+        <div class="node-detail">Local machine accessing the app over HTTPS via the ALB DNS name or a custom domain.</div>
+      </div>
+      <div class="node yellow" style="flex:1">
+        <div class="node-header"><span class="node-icon">📡</span><span class="node-name">CISA KEV Feed</span><span class="node-type">Public JSON</span></div>
+        <div class="node-detail">Polled every 6h. No auth required. HTTPS native.</div>
+        <div class="node-tags"><span class="ntag g">FREE</span><span class="ntag b">HTTPS</span></div>
+      </div>
+      <div class="node yellow" style="flex:1">
+        <div class="node-header"><span class="node-icon">📡</span><span class="node-name">NVD / NIST API</span><span class="node-type">Public API</span></div>
+        <div class="node-detail">CVE enrichment. Free API key. Polled weekly for new CVEs.</div>
+        <div class="node-tags"><span class="ntag g">FREE</span><span class="ntag b">API KEY</span></div>
+      </div>
+      <div class="node purple" style="flex:1">
+        <div class="node-header"><span class="node-icon">🤖</span><span class="node-name">OpenAI API</span><span class="node-type">External · Dev Only</span></div>
+        <div class="node-detail">GPT-4o-mini for AI assistant. ~$10–20/mo with spend cap. Swapped for self-hosted Llama in GovCloud.</div>
+        <div class="node-tags"><span class="ntag p">TEMP</span><span class="ntag y">REPLACE IN PROD</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow down into VPC -->
+  <div class="arrow-row">
+    <span class="arrow-label">HTTPS / TLS 1.2+</span>
+    <span class="arrow">↕</span>
+    <span class="arrow-label">outbound API calls</span>
+  </div>
+
+  <!-- VPC -->
+  <div class="zone vpc">
+    <div class="zone-label">AWS VPC — 10.0.0.0/16 · us-east-1</div>
+
+    <!-- Public subnet -->
+    <div class="zone public-subnet" style="margin-bottom:14px;">
+      <div class="zone-label">Public Subnet — 10.0.1.0/24 · us-east-1a</div>
+      <div class="row">
+        <div class="node green" style="flex:1">
+          <div class="node-header"><span class="node-icon">⚖️</span><span class="node-name">Application Load Balancer</span><span class="node-type">ALB</span></div>
+          <div class="node-detail">Terminates HTTPS. Routes <strong>/api/*</strong> → app server, <strong>/*</strong> → static React build (served from app or S3). Free tier eligible for low traffic.</div>
+          <div class="node-tags"><span class="ntag g">TLS TERMINATION</span><span class="ntag b">HTTP→HTTPS REDIRECT</span></div>
+        </div>
+        <div class="node green" style="flex:1">
+          <div class="node-header"><span class="node-icon">🔀</span><span class="node-name">NAT Gateway</span><span class="node-type">Outbound only</span></div>
+          <div class="node-detail">Allows private subnet resources (app server) to make outbound calls to KEV, NVD, OpenAI. No inbound. ~$32/mo — consider NAT Instance (t3.nano) to cut cost to ~$4/mo.</div>
+          <div class="node-tags"><span class="ntag y">~$32/mo OR</span><span class="ntag g">t3.nano NAT ~$4/mo</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Private subnet -->
+    <div class="zone private-subnet">
+      <div class="zone-label">Private Subnet — 10.0.2.0/24 · us-east-1a · No direct internet access</div>
+      <div class="row">
+
+        <!-- App server -->
+        <div class="col" style="flex:1.4">
+          <div class="node blue">
+            <div class="node-header"><span class="node-icon">🖥️</span><span class="node-name">App Server</span><span class="node-type">EC2 t3.small</span></div>
+            <div class="node-detail">
+              Runs two Docker containers:<br><br>
+              <strong>① FastAPI backend</strong> — REST API, connector scheduler, normalization engine, model router<br><br>
+              <strong>② React frontend</strong> — built static files served via nginx inside container, or served by FastAPI directly
+            </div>
+            <div class="node-tags">
+              <span class="ntag b">t3.small · 2vCPU · 2GB</span>
+              <span class="ntag g">~$15/mo</span>
+              <span class="ntag b">Docker</span>
+              <span class="ntag b">Port 8000 (API)</span>
+              <span class="ntag b">Port 3000 (UI)</span>
+            </div>
+          </div>
+          <div class="node orange">
+            <div class="node-header"><span class="node-icon">⏰</span><span class="node-name">Connector Scheduler</span><span class="node-type">Runs inside FastAPI</span></div>
+            <div class="node-detail">APScheduler running inside FastAPI process. Triggers: KEV pull (6h), NVD enrichment (24h), Tenable dummy data (24h), CMDB agent ingest (on-demand). No separate service needed at this scale.</div>
+            <div class="node-tags"><span class="ntag g">NO EXTRA COST</span><span class="ntag b">UPGRADE TO AIRFLOW LATER</span></div>
+          </div>
+        </div>
+
+        <!-- Arrow -->
+        <div style="display:flex;align-items:center;padding:0 4px;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <span style="font-family:var(--mono);font-size:9px;color:var(--dim);writing-mode:vertical-rl;transform:rotate(180deg)">PostgreSQL · port 5432</span>
+          </div>
+          <span style="color:var(--dim);font-size:18px;">↔</span>
+        </div>
+
+        <!-- RDS -->
+        <div class="col" style="flex:1">
+          <div class="node green">
+            <div class="node-header"><span class="node-icon">🗄️</span><span class="node-name">PostgreSQL</span><span class="node-type">RDS db.t3.micro</span></div>
+            <div class="node-detail">
+              Managed Postgres. Single-AZ (no Multi-AZ needed in dev). Automated daily snapshots. Accessible only from app server security group — no public endpoint.<br><br>
+              <strong>Key tables:</strong> assets, vulnerabilities, vuln_sources, connectors, audit_log
+            </div>
+            <div class="node-tags">
+              <span class="ntag g">db.t3.micro · 1vCPU · 1GB</span>
+              <span class="ntag g">~$15/mo</span>
+              <span class="ntag b">20GB gp2 storage</span>
+              <span class="ntag r">PRIVATE ONLY</span>
+            </div>
+          </div>
+          <div class="node" style="border-color:#2a3f5f;">
+            <div class="node-header"><span class="node-icon">🔑</span><span class="node-name">Secrets Manager</span><span class="node-type">AWS Secrets Manager</span></div>
+            <div class="node-detail">Stores: DB credentials, NVD API key, OpenAI API key, CMDB agent token. App reads secrets at startup — no hardcoded credentials anywhere.</div>
+            <div class="node-tags"><span class="ntag y">~$1–2/mo</span><span class="ntag b">NO PLAINTEXT CREDS</span></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow for CMDB agent -->
+  <div class="arrow-row">
+    <span class="arrow-label">HTTPS · bearer token auth · CMDB agent ingest endpoint</span>
+    <span class="arrow">↕</span>
+  </div>
+
+  <!-- Home network -->
+  <div class="row" style="gap:14px;">
+    <div class="zone home" style="flex:1">
+      <div class="zone-label">Your Home Network — CMDB Agent</div>
+      <div class="row">
+        <div class="node purple" style="flex:1">
+          <div class="node-header"><span class="node-icon">🤖</span><span class="node-name">CMDB Agent</span><span class="node-type">Your existing script</span></div>
+          <div class="node-detail">Your personal asset inventory agent runs against local machines, builds asset records (hostname, IP, OS, installed packages), and POSTs to the IronFist ingest API over HTTPS with a bearer token. Runs on a schedule (cron).</div>
+          <div class="node-tags"><span class="ntag p">YOUR MACHINES</span><span class="ntag b">HTTPS OUTBOUND ONLY</span><span class="ntag g">NO INBOUND PORT NEEDED</span></div>
+        </div>
+        <div class="node" style="flex:1;border-color:#2a1a3a;">
+          <div class="node-header"><span class="node-icon">💻</span><span class="node-name">Personal Machines</span><span class="node-type">Agent targets</span></div>
+          <div class="node-detail">Laptops, desktops, home lab VMs. Agent discovers: hostname, IP, OS version, installed packages (for OpenSSL version detection etc.). Real data — real CVE cross-reference hits.</div>
+          <div class="node-tags"><span class="ntag p">REAL ASSET DATA</span><span class="ntag g">REAL CVE HITS</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dummy data generator -->
+    <div class="zone external" style="flex:0.7;">
+      <div class="zone-label">Local Dev — Dummy Data</div>
+      <div class="node yellow">
+        <div class="node-header"><span class="node-icon">🎲</span><span class="node-name">Tenable Data Generator</span><span class="node-type">Python script · local</span></div>
+        <div class="node-detail">Generates realistic Tenable API-schema scan results. Seeded with real CVE IDs from KEV/NVD. POSTs to the Tenable connector endpoint as if it were a real scan. Run on demand or on schedule.</div>
+        <div class="node-tags"><span class="ntag y">LOCAL SCRIPT</span><span class="ntag g">FREE</span><span class="ntag b">REAL CVE SCHEMA</span></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /diagram -->
+
+<!-- Cost table -->
+<div class="cost-table">
+  <h3>Estimated Monthly Cost — Personal AWS (us-east-1)</h3>
+  <table>
+    <thead><tr><th>Service</th><th>Spec</th><th>Notes</th><th>Est. Cost</th></tr></thead>
+    <tbody>
+      <tr><td>EC2 — App Server</td><td>t3.small · on-demand</td><td>Stop when not using to save cost</td><td>~$15</td></tr>
+      <tr><td>RDS — PostgreSQL</td><td>db.t3.micro · Single-AZ · 20GB</td><td>Always-on; pause via snapshot if needed</td><td>~$15</td></tr>
+      <tr><td>ALB</td><td>Application Load Balancer</td><td>Low traffic — near free tier</td><td>~$5</td></tr>
+      <tr><td>NAT</td><td>t3.nano NAT instance (not gateway)</td><td>Saves ~$28/mo vs managed NAT Gateway</td><td>~$4</td></tr>
+      <tr><td>Secrets Manager</td><td>4–5 secrets</td><td>$0.40/secret/mo</td><td>~$2</td></tr>
+      <tr><td>Data transfer + misc</td><td>S3 snapshots, logs, bandwidth</td><td>Minimal at dev scale</td><td>~$3</td></tr>
+      <tr><td>OpenAI API</td><td>GPT-4o-mini · set $20 cap</td><td>Dev usage only — set hard spend limit</td><td>~$5–20</td></tr>
+      <tr><td><strong>Total</strong></td><td></td><td></td><td><strong>~$49–64/mo</strong></td></tr>
+    </tbody>
+  </table>
+  <div style="font-size:10px;color:var(--dim);font-family:var(--mono);margin-top:8px;">
+    💡 Stop the EC2 instance when not actively developing → saves ~$15/mo. Pause RDS via snapshot → saves another ~$15. Weekend-only dev: &lt;$20/mo.
+  </div>
+</div>
+
+<!-- Migration note -->
+<div class="migration-note">
+  <h3>GovCloud Migration Checklist — What Changes, What Doesn't</h3>
+  <ul>
+    <li>Same Docker containers, same application code — zero changes to app logic</li>
+    <li>RDS: pg_dump from us-east-1 → pg_restore into us-gov-east-1 RDS instance</li>
+    <li>Entra ID: swap personal tenant config for agency tenant (environment variable)</li>
+    <li>OpenAI → self-hosted Llama 3.1 on a GPU instance (single env var swap in model router)</li>
+    <li>NAT instance → managed NAT Gateway (GovCloud compliance preference)</li>
+    <li>Add CloudTrail, Config, GuardDuty for FedRAMP Moderate controls</li>
+    <li>Add VPC Flow Logs and centralized logging (CloudWatch → S3)</li>
+    <li>TLS cert: ACM in us-east-1 → ACM in us-gov-east-1 (same process)</li>
+    <li>IAM roles: recreate in GovCloud account (same policies, different ARNs)</li>
+  </ul>
+</div>
+
+</body>
+</html>
