@@ -1,7 +1,7 @@
 # IronFist
-### Federal Vulnerability Management Platform
+### Vulnerability Management Platform
 
-A custom-built vulnerability management platform designed for federal agency use. Built to replace commercial platforms with a purpose-built, agency-controlled solution that integrates natively with federal compliance requirements (FISMA, BOD 22-01, CISA KEV).
+A custom-built vulnerability management platform designed for personal use. Built to replace commercial platforms with a purpose-built, agency-controlled solution that integrates natively with federal compliance requirements (FISMA, BOD 22-01, CISA KEV).
 
 ---
 
