@@ -8,15 +8,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python deps
-COPY backend/requirements.txt .
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY backend/ .
+COPY . .
 
 # Copy wireframe into static directory so FastAPI can serve it
 RUN mkdir -p static
-COPY wireframes/vuln-mgmt-wireframe-v4.html static/index.html
+# COPY ../wireframes/vuln-mgmt-wireframe-v4.html static/index.html
 
 EXPOSE 8000
 

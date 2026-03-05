@@ -21,8 +21,8 @@ services:
   # ── FastAPI Backend ──────────────────────────────────────────────────────────
   api:
     build:
-      context: .
-      dockerfile: backend/Dockerfile
+      context: ./backend
+      dockerfile: Dockerfile
     restart: unless-stopped
     ports:
       - "8000:8000"
