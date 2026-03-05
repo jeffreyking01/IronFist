@@ -48,6 +48,17 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .ms-icon span:nth-child(4){background:#ffba08;}
 .login-meta{margin-top:20px;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--dim);justify-content:center;}
 .login-meta .dot{width:4px;height:4px;border-radius:50%;background:var(--green);}
+.login-divider{display:flex;align-items:center;gap:10px;margin:20px 0;}
+.login-divider hr{flex:1;border:none;border-top:1px solid var(--border);}
+.login-divider span{font-family:var(--mono);font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;white-space:nowrap;}
+.local-form{display:flex;flex-direction:column;gap:10px;}
+.local-input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:10px 14px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;}
+.local-input::placeholder{color:var(--dim);}
+.local-input:focus{border-color:rgba(30,111,255,0.5);}
+.local-btn{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:12px;color:var(--text);font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;}
+.local-btn:hover{background:var(--border);border-color:var(--blue);}
+.dev-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(255,197,61,0.08);border:1px solid rgba(255,197,61,0.2);border-radius:4px;padding:2px 8px;font-family:var(--mono);font-size:9px;color:var(--yellow);}
+.login-error{background:rgba(255,77,77,0.1);border:1px solid rgba(255,77,77,0.3);border-radius:6px;padding:8px 12px;font-size:11px;color:#ff8888;display:none;margin-bottom:8px;}
 
 /* App layout */
 #appView{flex-direction:column;}
@@ -294,8 +305,16 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       <div class="ms-icon"><span></span><span></span><span></span><span></span></div>
       Sign in with Microsoft Entra ID
     </button>
-    <div class="login-meta">
-      <div class="dot"></div> TLS 1.3 &nbsp;·&nbsp; AES-256 at rest &nbsp;·&nbsp; FedRAMP GovCloud &nbsp;·&nbsp; Entra MFA enforced
+    <div class="login-divider"><hr><span>or local dev account</span><hr></div>
+    <div style="margin-bottom:8px;"><span class="dev-badge">&#9888; DEV ONLY - disable in production</span></div>
+    <div class="login-error" id="login-error">Invalid username or password.</div>
+    <div class="local-form">
+      <input class="local-input" id="local-user" type="text" placeholder="Username" autocomplete="off" />
+      <input class="local-input" id="local-pass" type="password" placeholder="Password" autocomplete="off" />
+      <button class="local-btn" onclick="localLogin()">Sign in with local account</button>
+    </div>
+    <div class="login-meta" style="margin-top:16px;">
+      <div class="dot"></div> TLS 1.3 &nbsp;·&nbsp; AES-256 at rest &nbsp;·&nbsp; AUTH_MODE controls active method
     </div>
   </div>
 </div>
@@ -568,6 +587,25 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 </div>
 
 <script>
+function localLogin(){
+  const user = document.getElementById('local-user').value.trim();
+  const pass = document.getElementById('local-pass').value;
+  const err  = document.getElementById('login-error');
+  // Dev credentials — replace with real API call in backend
+  if(user === 'admin' && pass === 'ironfist'){
+    err.style.display = 'none';
+    goApp();
+  } else {
+    err.style.display = 'block';
+  }
+}
+// Allow Enter key to submit local login
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Enter'){
+    const lv = document.getElementById('loginView');
+    if(lv && lv.classList.contains('active')) localLogin();
+  }
+});
 function goApp(){
   document.getElementById('loginView').classList.remove('active');
   document.getElementById('appView').classList.add('active');
