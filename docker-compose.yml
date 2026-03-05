@@ -1,0 +1,63 @@
+services:
+
+  # ── PostgreSQL ───────────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       ironfist
+      POSTGRES_USER:     ironfist_admin
+      POSTGRES_PASSWORD: devpassword
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"     # Exposed locally so you can connect with psql or pgAdmin
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ironfist_admin -d ironfist"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── FastAPI Backend ──────────────────────────────────────────────────────────
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # App
+      ENVIRONMENT:          dev
+      DEBUG:                "true"
+      LOG_LEVEL:            INFO
+
+      # Database
+      DB_HOST:              db
+      DB_PORT:              "5432"
+      DB_NAME:              ironfist
+      DB_USERNAME:          ironfist_admin
+      DB_PASSWORD:          devpassword
+
+      # Auth — local mode for dev
+      AUTH_MODE:            local
+      JWT_SECRET:           dev-secret-change-in-production
+      LOCAL_AUTH_USERNAME:  admin
+      LOCAL_AUTH_PASSWORD:  ironfist
+
+      # External APIs — add your keys here or in .env file
+      OPENAI_API_KEY:       ${OPENAI_API_KEY:-}
+      NVD_API_KEY:          ${NVD_API_KEY:-}
+
+      # CMDB agent token
+      CMDB_AGENT_TOKEN:     dev-agent-token
+
+    volumes:
+      - ./backend:/app          # Hot reload — code changes reflect immediately
+      - ./wireframes:/wireframes # Wireframe served as UI
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
