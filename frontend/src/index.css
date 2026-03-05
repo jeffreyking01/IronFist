@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-bg text-text font-sans;
+    font-size: 13px;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-surface;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border2 rounded;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-surface border border-border rounded-xl p-4;
+  }
+  .btn-primary {
+    @apply bg-blue hover:bg-blue/80 text-white font-semibold px-4 py-2 rounded-lg transition-colors;
+  }
+  .btn-ghost {
+    @apply bg-surface2 hover:bg-border border border-border2 text-text px-4 py-2 rounded-lg transition-colors;
+  }
+  .badge {
+    @apply font-mono text-[10px] px-2 py-0.5 rounded border;
+  }
+  .badge-critical { @apply bg-red/10 text-red border-red/20; }
+  .badge-high     { @apply bg-orange/10 text-orange border-orange/20; }
+  .badge-medium   { @apply bg-yellow/10 text-yellow border-yellow/20; }
+  .badge-low      { @apply bg-green/10 text-green border-green/20; }
+  .badge-kev      { @apply bg-red/10 text-red border-red/30; }
+}

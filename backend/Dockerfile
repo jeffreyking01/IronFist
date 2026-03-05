@@ -16,7 +16,7 @@ COPY . .
 
 # Copy wireframe into static directory so FastAPI can serve it
 RUN mkdir -p static
-# COPY ../wireframes/vuln-mgmt-wireframe-v4.html static/index.html
+#COPY ../wireframes/vuln-mgmt-wireframe-v4.html static/index.html
 
 EXPOSE 8000
 

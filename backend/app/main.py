@@ -5,7 +5,6 @@ IronFist — FastAPI Application
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, BackgroundTasks
-from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -119,25 +118,3 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 @app.get("/", include_in_schema=False)
 async def serve_ui():
     return FileResponse("static/index.html")
-
-def custom_openapi():
-    if app.openapi_schema:
-        return app.openapi_schema
-    schema = get_openapi(
-        title=app.title,
-        version=app.version,
-        routes=app.routes,
-    )
-    schema["components"]["securitySchemes"] = {
-        "BearerAuth": {
-            "type": "http",
-            "scheme": "bearer",
-        }
-    }
-    for path in schema["paths"].values():
-        for method in path.values():
-            method["security"] = [{"BearerAuth": []}]
-    app.openapi_schema = schema
-    return schema
-
-app.openapi = custom_openapi
