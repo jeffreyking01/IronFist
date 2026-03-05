@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VulnOps — Federal Vulnerability Management Platform v4</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+:root {
+  --bg:#080c14; --surface:#0d1420; --surface2:#111827; --border:#1e2d45; --border2:#243550;
+  --text:#c9d8ee; --dim:#4e6480; --mid:#7a9ab8;
+  --blue:#1e6fff; --blue-dim:#0f3d8a;
+  --green:#00d68f; --green-dim:#003d28;
+  --red:#ff4d4d; --red-dim:#3d0f0f;
+  --yellow:#ffc53d; --yellow-dim:#3d2c00;
+  --orange:#ff7b2e;
+  --purple:#a855f7; --purple-dim:rgba(168,85,247,0.08);
+  --mono:'IBM Plex Mono',monospace; --sans:'IBM Plex Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:13px;}
+.view{display:none;}
+.view.active{display:flex;flex-direction:column;height:100vh;}
+
+/* Classification bar */
+.class-bar{background:#1a2a00;border-bottom:1px solid #3a5a00;padding:5px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.class-label{font-family:var(--mono);font-size:10px;font-weight:600;color:#7bc900;letter-spacing:2px;text-transform:uppercase;}
+.gov-notice{font-size:10px;color:#4a6a20;}
+
+/* Login */
+#loginView{background:var(--bg);align-items:center;justify-content:center;position:relative;overflow:hidden;}
+.login-bg{position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 20% 50%,rgba(30,111,255,0.06) 0%,transparent 70%),radial-gradient(ellipse 40% 60% at 80% 30%,rgba(0,214,143,0.04) 0%,transparent 70%);}
+.login-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(30,111,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(30,111,255,0.04) 1px,transparent 1px);background-size:40px 40px;}
+.login-box{position:relative;width:420px;background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:40px;box-shadow:0 40px 80px rgba(0,0,0,0.6),0 0 0 1px rgba(30,111,255,0.1);}
+.login-logo{display:flex;align-items:center;gap:12px;margin-bottom:32px;}
+.logo-mark{width:40px;height:40px;background:linear-gradient(135deg,var(--blue),#0040cc);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:600;font-size:16px;color:white;}
+.logo-text{font-size:20px;font-weight:700;letter-spacing:-0.5px;}
+.logo-sub{font-size:11px;color:var(--dim);margin-top:2px;}
+.login-notice{background:rgba(255,77,77,0.08);border:1px solid rgba(255,77,77,0.2);border-radius:6px;padding:10px 14px;margin-bottom:28px;font-size:11px;color:#ff8888;line-height:1.6;}
+.login-notice strong{color:var(--red);}
+.entra-btn{width:100%;background:var(--blue);border:none;border-radius:8px;padding:14px;color:white;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;}
+.entra-btn:hover{background:#1558e0;}
+.ms-icon{width:20px;height:20px;display:grid;grid-template-columns:1fr 1fr;gap:2px;}
+.ms-icon span{display:block;border-radius:1px;}
+.ms-icon span:nth-child(1){background:#f35325;}
+.ms-icon span:nth-child(2){background:#80bb01;}
+.ms-icon span:nth-child(3){background:#05a6f0;}
+.ms-icon span:nth-child(4){background:#ffba08;}
+.login-meta{margin-top:20px;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--dim);justify-content:center;}
+.login-meta .dot{width:4px;height:4px;border-radius:50%;background:var(--green);}
+.login-divider{display:flex;align-items:center;gap:10px;margin:20px 0;}
+.login-divider hr{flex:1;border:none;border-top:1px solid var(--border);}
+.login-divider span{font-family:var(--mono);font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;white-space:nowrap;}
+.local-form{display:flex;flex-direction:column;gap:10px;}
+.local-input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:10px 14px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;}
+.local-input::placeholder{color:var(--dim);}
+.local-input:focus{border-color:rgba(30,111,255,0.5);}
+.local-btn{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:12px;color:var(--text);font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;}
+.local-btn:hover{background:var(--border);border-color:var(--blue);}
+.dev-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(255,197,61,0.08);border:1px solid rgba(255,197,61,0.2);border-radius:4px;padding:2px 8px;font-family:var(--mono);font-size:9px;color:var(--yellow);}
+.login-error{background:rgba(255,77,77,0.1);border:1px solid rgba(255,77,77,0.3);border-radius:6px;padding:8px 12px;font-size:11px;color:#ff8888;display:none;margin-bottom:8px;}
+
+/* App layout */
+#appView{flex-direction:column;}
+.app-inner{display:grid;grid-template-columns:220px 1fr;flex:1;overflow:hidden;}
+
+/* Topbar */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;height:52px;display:flex;align-items:center;gap:16px;flex-shrink:0;}
+.topbar-logo{display:flex;align-items:center;gap:10px;}
+.topbar-logo .mark{width:28px;height:28px;background:linear-gradient(135deg,var(--blue),#0040cc);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;font-weight:600;color:white;}
+.topbar-logo .name{font-size:15px;font-weight:700;letter-spacing:-0.3px;}
+.topbar-divider{width:1px;height:24px;background:var(--border);}
+.topbar-agency{font-size:11px;color:var(--dim);}
+.topbar-pills{margin-left:auto;display:flex;gap:8px;align-items:center;}
+.tpill{font-family:var(--mono);font-size:10px;font-weight:600;padding:3px 10px;border-radius:3px;letter-spacing:0.5px;}
+.tpill.green{background:var(--green-dim);color:var(--green);border:1px solid rgba(0,214,143,0.2);}
+.tpill.red{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,77,77,0.2);}
+.tpill.yellow{background:var(--yellow-dim);color:var(--yellow);border:1px solid rgba(255,197,61,0.2);}
+.tpill.blue{background:rgba(30,111,255,0.1);color:#6699ff;border:1px solid rgba(30,111,255,0.2);}
+.tpill.purple{background:rgba(168,85,247,0.1);color:#c084fc;border:1px solid rgba(168,85,247,0.25);}
+.topbar-user{display:flex;align-items:center;gap:8px;margin-left:12px;cursor:pointer;padding:4px 10px;border-radius:6px;border:1px solid var(--border);}
+.topbar-user .avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--blue-dim),#0d2255);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#6699ff;}
+.topbar-user .uname{font-size:12px;color:var(--mid);}
+.topbar-user .urole{font-size:10px;color:var(--dim);font-family:var(--mono);}
+.prefs-btn{width:30px;height:30px;border-radius:6px;background:transparent;border:1px solid var(--border);color:var(--dim);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;}
+.prefs-btn:hover{background:var(--surface2);color:var(--text);}
+
+/* Global Search */
+.gsearch-wrap{flex:1;max-width:480px;position:relative;}
+.gsearch{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:8px 14px 8px 36px;font-family:var(--sans);font-size:12px;color:var(--text);outline:none;transition:border-color 0.15s;}
+.gsearch::placeholder{color:var(--dim);}
+.gsearch:focus{border-color:rgba(168,85,247,0.5);background:var(--bg);}
+.gsearch-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:13px;pointer-events:none;}
+.gsearch-hint{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-family:var(--mono);font-size:9px;color:var(--dim);pointer-events:none;}
+.gsearch-drop{display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--surface);border:1px solid var(--border2);border-radius:8px;box-shadow:0 16px 40px rgba(0,0,0,0.5);z-index:200;overflow:hidden;}
+.gsearch-drop.open{display:block;}
+.gsd-section{padding:8px 12px 4px;font-family:var(--mono);font-size:9px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:1px;}
+.gsd-item{display:flex;align-items:center;gap:10px;padding:8px 12px;cursor:pointer;border-bottom:1px solid rgba(30,45,69,0.5);}
+.gsd-item:last-child{border-bottom:none;}
+.gsd-item:hover{background:var(--surface2);}
+.gsd-icon{font-size:12px;width:20px;text-align:center;flex-shrink:0;}
+.gsd-main{font-size:12px;color:var(--text);flex:1;}
+.gsd-sub{font-size:10px;color:var(--dim);margin-top:1px;}
+.gsd-badge{font-family:var(--mono);font-size:9px;padding:1px 6px;border-radius:3px;flex-shrink:0;}
+.gsd-ai-row{padding:10px 12px;background:rgba(168,85,247,0.05);border-top:1px solid rgba(168,85,247,0.15);display:flex;align-items:center;gap:9px;cursor:pointer;}
+.gsd-ai-row:hover{background:rgba(168,85,247,0.1);}
+.gsd-ai-label{font-size:11px;color:#c084fc;flex:1;}
+.gsd-ai-icon{font-size:11px;color:var(--purple);}
+
+/* Sidebar */
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:16px 0;display:flex;flex-direction:column;overflow-y:auto;}
+.sb-section{padding:10px 16px 4px;font-family:var(--mono);font-size:9px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px;margin-top:6px;}
+.nav-item{padding:8px 16px;font-size:12px;color:var(--mid);cursor:pointer;display:flex;align-items:center;gap:9px;border-left:2px solid transparent;}
+.nav-item:hover{background:var(--surface2);color:var(--text);}
+.nav-item.active{background:rgba(30,111,255,0.08);color:#6699ff;border-left-color:var(--blue);}
+.nav-item.ai-active{background:rgba(168,85,247,0.08);color:#c084fc;border-left-color:var(--purple);}
+.nbadge{margin-left:auto;font-family:var(--mono);font-size:10px;padding:1px 6px;border-radius:3px;background:var(--surface2);color:var(--dim);}
+.nbadge.alert{background:var(--red-dim);color:var(--red);}
+.nav-item.dim{opacity:0.35;pointer-events:none;}
+
+/* Main */
+.main{overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px;}
+
+/* Prefs overlay */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;align-items:flex-start;justify-content:flex-end;padding:60px 20px 20px;}
+.overlay.active{display:flex;}
+.prefs-panel{width:360px;background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,0.5);max-height:calc(100vh - 80px);overflow-y:auto;}
+.prefs-panel h3{font-size:13px;font-weight:600;margin-bottom:4px;}
+.prefs-sub{font-size:11px;color:var(--dim);margin-bottom:20px;}
+.prefs-section{font-size:10px;font-family:var(--mono);color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin:14px 0 8px;}
+.pref-row{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:6px;background:var(--surface2);margin-bottom:4px;}
+.pref-row .pname{font-size:12px;}
+.pref-row .pcontrols{display:flex;gap:6px;align-items:center;}
+.toggle{width:34px;height:18px;border-radius:9px;background:var(--blue);cursor:pointer;position:relative;border:none;}
+.toggle::after{content:'';position:absolute;width:12px;height:12px;border-radius:50%;background:white;top:3px;right:3px;}
+.toggle.off{background:var(--border2);}
+.toggle.off::after{right:auto;left:3px;}
+.drag-handle{color:var(--dim);cursor:grab;font-size:12px;}
+.theme-row{display:flex;gap:8px;margin-bottom:4px;}
+.theme-chip{flex:1;padding:8px;border-radius:6px;border:1px solid var(--border);cursor:pointer;font-size:11px;text-align:center;color:var(--mid);}
+.theme-chip.active{border-color:var(--blue);color:#6699ff;background:rgba(30,111,255,0.08);}
+.logo-upload{background:var(--surface2);border:1px dashed var(--border2);border-radius:6px;padding:14px;text-align:center;font-size:11px;color:var(--dim);cursor:pointer;margin-bottom:4px;}
+.prefs-close{width:100%;margin-top:14px;background:var(--blue);border:none;border-radius:6px;padding:10px;color:white;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;}
+
+/* Model router (in prefs) */
+.model-opts{display:flex;flex-direction:column;gap:5px;margin-bottom:8px;}
+.model-opt{display:flex;align-items:flex-start;gap:10px;padding:9px 11px;border-radius:7px;border:1px solid var(--border);cursor:pointer;background:var(--surface2);}
+.model-opt.sel{border-color:rgba(168,85,247,0.5);background:rgba(168,85,247,0.07);}
+.model-opt .radio{width:14px;height:14px;border-radius:50%;border:2px solid var(--border2);flex-shrink:0;margin-top:2px;}
+.model-opt.sel .radio{border-color:var(--purple);background:var(--purple);}
+.mname{font-size:12px;font-weight:600;color:var(--text);}
+.mdesc{font-size:10px;color:var(--dim);margin-top:2px;line-height:1.4;}
+.mbadge{margin-left:auto;font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:3px;flex-shrink:0;}
+.mbadge.local{background:var(--green-dim);color:var(--green);border:1px solid rgba(0,214,143,0.2);}
+.mbadge.ext{background:rgba(30,111,255,0.1);color:#6699ff;border:1px solid rgba(30,111,255,0.2);}
+.mbadge.risk{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,77,77,0.2);}
+.model-note{font-size:10px;color:var(--dim);background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;line-height:1.5;}
+.model-note strong{color:var(--yellow);}
+
+/* Arch banner */
+.arch-banner{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 18px;}
+.arch-banner h3{font-family:var(--mono);font-size:9px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;}
+.arch-layers{display:flex;align-items:stretch;}
+.arch-layer{flex:1;border:1px solid var(--border);border-radius:7px;padding:10px 12px;}
+.arch-layer.blue{background:rgba(30,111,255,0.05);border-color:rgba(30,111,255,0.25);}
+.arch-layer.green{background:rgba(0,214,143,0.05);border-color:rgba(0,214,143,0.25);}
+.arch-layer.purple{background:rgba(168,85,247,0.05);border-color:rgba(168,85,247,0.25);}
+.arch-layer.dim-l{background:rgba(255,197,61,0.03);border-color:rgba(255,197,61,0.15);opacity:0.6;}
+.arch-layer h4{font-family:var(--mono);font-size:10px;font-weight:600;margin-bottom:6px;}
+.arch-layer.blue h4{color:#6699ff;}
+.arch-layer.green h4{color:var(--green);}
+.arch-layer.purple h4{color:#c084fc;}
+.arch-layer.dim-l h4{color:var(--yellow);}
+.arch-layer h4 span{font-size:9px;font-weight:400;opacity:0.6;display:block;margin-top:1px;}
+.arch-layer ul{list-style:none;}
+.arch-layer ul li{font-size:10px;color:var(--mid);padding:1px 0;}
+.arch-layer ul li::before{content:'›';margin-right:5px;color:var(--dim);}
+.arch-arrow{color:var(--dim);font-size:16px;padding:0 6px;display:flex;align-items:center;}
+.sec-badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+.sec-badge{display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:7px 12px;font-size:11px;color:var(--mid);}
+.sbv{font-family:var(--mono);font-size:10px;color:var(--green);}
+
+/* KPIs */
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;}
+.klabel{font-family:var(--mono);font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+.kval{font-size:30px;font-weight:700;line-height:1;font-family:var(--mono);}
+.ksub{font-size:10px;color:var(--dim);margin-top:5px;}
+.kpi.c .kval{color:var(--red);}
+.kpi.h .kval{color:var(--orange);}
+.kpi.k .kval{color:var(--yellow);}
+.kpi.a .kval{color:var(--green);}
+.kpi.s .kval{color:#6699ff;}
+
+/* AI Assistant Panel */
+.ai-panel{background:var(--surface);border:1px solid rgba(168,85,247,0.3);border-radius:10px;padding:14px;position:relative;overflow:hidden;}
+.ai-panel::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 100% 0%,rgba(168,85,247,0.05) 0%,transparent 70%);pointer-events:none;}
+.ai-backend-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.3);border-radius:4px;padding:2px 8px;font-family:var(--mono);font-size:9px;color:#c084fc;letter-spacing:0.5px;}
+.ai-backend-badge .dot{width:6px;height:6px;border-radius:50%;background:var(--purple);box-shadow:0 0 5px var(--purple);}
+.ai-chat{display:flex;flex-direction:column;gap:8px;margin:10px 0;}
+.ai-msg{padding:9px 12px;border-radius:7px;font-size:11px;line-height:1.5;max-width:88%;}
+.ai-msg.user{background:rgba(30,111,255,0.12);border:1px solid rgba(30,111,255,0.2);color:var(--text);align-self:flex-end;}
+.ai-msg.bot{background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.2);color:var(--mid);align-self:flex-start;}
+.ai-label{font-family:var(--mono);font-size:9px;color:var(--dim);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.8px;}
+.ai-suggestions{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+.ai-sug{font-size:10px;padding:4px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;color:var(--dim);cursor:pointer;font-family:var(--mono);}
+.ai-sug:hover{border-color:rgba(168,85,247,0.4);color:#c084fc;}
+.ai-input-row{display:flex;gap:8px;margin-top:8px;}
+.ai-input{flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:9px 12px;font-family:var(--sans);font-size:12px;color:var(--text);outline:none;}
+.ai-input::placeholder{color:var(--dim);}
+.ai-input:focus{border-color:rgba(168,85,247,0.5);}
+.ai-send{background:rgba(168,85,247,0.2);border:1px solid rgba(168,85,247,0.4);border-radius:6px;padding:9px 14px;color:#c084fc;font-size:12px;cursor:pointer;font-family:var(--sans);white-space:nowrap;}
+.ai-send:hover{background:rgba(168,85,247,0.3);}
+
+/* Panels */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;}
+.ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.ptitle{font-size:13px;font-weight:600;}
+.ptag{font-family:var(--mono);font-size:9px;font-weight:600;padding:2px 8px;border-radius:3px;letter-spacing:0.5px;}
+.ptag.blue{background:rgba(30,111,255,0.1);color:#6699ff;border:1px solid rgba(30,111,255,0.2);}
+.ptag.green{background:var(--green-dim);color:var(--green);border:1px solid rgba(0,214,143,0.2);}
+.ptag.yellow{background:var(--yellow-dim);color:var(--yellow);border:1px solid rgba(255,197,61,0.2);}
+.ptag.gray{background:var(--surface2);color:var(--mid);border:1px solid var(--border2);}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+
+/* Connectors */
+.connector-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.connector{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:9px 11px;display:flex;align-items:center;gap:9px;}
+.connector.on{border-color:rgba(0,214,143,0.25);}
+.connector.off{opacity:0.5;}
+.connector.add{border:1px dashed var(--dim);justify-content:center;color:var(--dim);font-size:11px;cursor:pointer;}
+.cdot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.cdot.on{background:var(--green);box-shadow:0 0 5px var(--green);}
+.cdot.off{background:var(--dim);}
+.cname{font-size:11px;font-weight:600;}
+.cmeta{font-size:10px;color:var(--dim);font-family:var(--mono);}
+
+/* CMDB */
+.cmdb-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;}
+.cstat{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px;text-align:center;}
+.cn{font-size:22px;font-weight:700;color:var(--green);font-family:var(--mono);}
+.cl{font-size:10px;color:var(--dim);margin-top:2px;font-family:var(--mono);}
+.agent-bar{background:var(--green-dim);border:1px solid rgba(0,214,143,0.2);border-radius:6px;padding:8px 12px;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--green);margin-bottom:10px;}
+.pulse{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 5px var(--green);flex-shrink:0;}
+
+/* Tables */
+.vtable{width:100%;border-collapse:collapse;}
+.vtable th{font-family:var(--mono);font-size:9px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:1px;padding:5px 8px;text-align:left;border-bottom:1px solid var(--border);}
+.vtable td{font-size:11px;padding:7px 8px;border-bottom:1px solid rgba(30,45,69,0.6);color:var(--mid);vertical-align:middle;}
+.vtable tr:hover td{background:var(--surface2);}
+.vtable tr:last-child td{border-bottom:none;}
+.cve{color:#6699ff;font-weight:600;font-family:var(--mono);}
+.sev{font-family:var(--mono);font-size:9px;font-weight:600;padding:2px 6px;border-radius:3px;}
+.sev.crit{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,77,77,0.2);}
+.sev.high{background:rgba(255,123,46,0.1);color:var(--orange);border:1px solid rgba(255,123,46,0.2);}
+.sev.med{background:var(--yellow-dim);color:var(--yellow);border:1px solid rgba(255,197,61,0.2);}
+.sbadge{font-family:var(--mono);font-size:9px;background:var(--surface2);color:var(--mid);padding:1px 5px;border-radius:3px;}
+.kflag{font-family:var(--mono);font-size:8px;font-weight:600;background:var(--yellow-dim);color:var(--yellow);border:1px solid rgba(255,197,61,0.3);padding:1px 5px;border-radius:3px;}
+
+/* Normalization */
+.norm-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(30,45,69,0.6);}
+.norm-row:last-child{border-bottom:none;}
+.ncve{color:#6699ff;font-weight:600;width:115px;flex-shrink:0;font-family:var(--mono);font-size:11px;}
+.nsrcs{display:flex;gap:4px;flex:1;}
+.nsrc{font-size:9px;background:var(--surface2);color:var(--mid);padding:1px 5px;border-radius:3px;font-family:var(--mono);}
+.nresult{font-size:9px;color:var(--green);font-family:var(--mono);white-space:nowrap;}
+.nasset{font-size:10px;color:var(--mid);width:130px;flex-shrink:0;text-align:right;font-family:var(--mono);}
+
+/* KEV items */
+.kev-item{display:flex;align-items:flex-start;gap:9px;padding:8px 0;border-bottom:1px solid rgba(30,45,69,0.6);}
+.kev-item:last-child{border-bottom:none;}
+.kbar{width:2px;border-radius:2px;align-self:stretch;min-height:34px;flex-shrink:0;}
+.kbar.r{background:var(--red);}
+.kbar.y{background:var(--yellow);}
+.kcve{font-size:11px;font-weight:600;color:#6699ff;font-family:var(--mono);}
+.kdesc{font-size:10px;color:var(--mid);margin-top:1px;}
+.kdue{font-size:9px;margin-top:2px;font-family:var(--mono);}
+.kdue.r{color:var(--red);}
+.kdue.y{color:var(--yellow);}
+
+/* Deferred banner */
+.def-banner{background:rgba(255,197,61,0.03);border:1px dashed rgba(255,197,61,0.2);border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:14px;}
+.def-banner h4{font-size:13px;font-weight:600;color:var(--yellow);}
+.def-banner p{font-size:11px;color:var(--mid);margin-top:2px;}
+.def-chips{display:flex;gap:7px;margin-left:auto;flex-wrap:wrap;}
+.def-chip{font-size:10px;padding:3px 9px;background:var(--yellow-dim);border:1px solid rgba(255,197,61,0.2);border-radius:5px;color:var(--yellow);opacity:0.55;font-family:var(--mono);}
+</style>
+</head>
+<body>
+
+<!-- ══════════ LOGIN ══════════ -->
+<div id="loginView" class="view active">
+  <div class="login-bg"></div>
+  <div class="login-grid"></div>
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="logo-mark">V</div>
+      <div><div class="logo-text">VulnOps</div><div class="logo-sub">FEDERAL VULNERABILITY MANAGEMENT PLATFORM</div></div>
+    </div>
+    <div class="login-notice">
+      <strong>U.S. GOVERNMENT SYSTEM NOTICE</strong><br>
+      This system is for authorized users only. All activity is monitored and recorded. Unauthorized access is prohibited and subject to Federal law. This system processes <strong>Controlled Unclassified Information (CUI)</strong>.
+    </div>
+    <button class="entra-btn" onclick="goApp()">
+      <div class="ms-icon"><span></span><span></span><span></span><span></span></div>
+      Sign in with Microsoft Entra ID
+    </button>
+    <div class="login-divider"><hr><span>or local dev account</span><hr></div>
+    <div style="margin-bottom:8px;"><span class="dev-badge">&#9888; DEV ONLY - disable in production</span></div>
+    <div class="login-error" id="login-error">Invalid username or password.</div>
+    <div class="local-form">
+      <input class="local-input" id="local-user" type="text" placeholder="Username" autocomplete="off" />
+      <input class="local-input" id="local-pass" type="password" placeholder="Password" autocomplete="off" />
+      <button class="local-btn" onclick="localLogin()">Sign in with local account</button>
+    </div>
+    <div class="login-meta" style="margin-top:16px;">
+      <div class="dot"></div> TLS 1.3 &nbsp;·&nbsp; AES-256 at rest &nbsp;·&nbsp; AUTH_MODE controls active method
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ APP ══════════ -->
+<div id="appView" class="view">
+  <div class="class-bar">
+    <div class="class-label">⬛ UNCLASSIFIED // CUI</div>
+    <div class="gov-notice">This is a U.S. Government information system. Use constitutes consent to monitoring.</div>
+    <div class="class-label">FedRAMP HIGH</div>
+  </div>
+
+  <div class="topbar">
+    <div class="topbar-logo"><div class="mark">V</div><div class="name">VulnOps</div></div>
+    <div class="topbar-divider"></div>
+    <div class="topbar-agency">Dept. of [Agency] — OCISO</div>
+
+    <!-- Global Search -->
+    <div class="gsearch-wrap">
+      <span class="gsearch-icon">⌕</span>
+      <input class="gsearch" id="gsearch" placeholder='Search — try "hosts running OpenSSL 3.0" or "CVE-2024-21762"' autocomplete="off" oninput="handleSearch(this.value)" onfocus="handleSearch(this.value)" onblur="setTimeout(closeSearch,150)" />
+      <span class="gsearch-hint" id="gsearch-hint">AI ⬡</span>
+      <div class="gsearch-drop" id="gsearch-drop">
+        <!-- populated by JS -->
+      </div>
+    </div>
+
+    <div class="topbar-pills">
+      <span class="tpill blue">6 Sources</span>
+      <span class="tpill green">CMDB Live</span>
+      <span class="tpill purple">⬡ AI: Llama 3.1 Local</span>
+      <span class="tpill red">14 KEV Overdue</span>
+      <span class="tpill yellow">BOD SLA: 78%</span>
+    </div>
+    <button class="prefs-btn" onclick="togglePrefs()" title="Preferences">⊞</button>
+    <div class="topbar-user">
+      <div class="avatar">JD</div>
+      <div><div class="uname">J. Doe</div><div class="urole">CISO · Full Access</div></div>
+    </div>
+  </div>
+
+  <div class="app-inner">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sb-section">Overview</div>
+      <div class="nav-item active">▪ Dashboard</div>
+      <div class="nav-item">▪ All Vulnerabilities <span class="nbadge">4,821</span></div>
+      <div class="sb-section">Data Ingestion</div>
+      <div class="nav-item">▪ Connectors <span class="nbadge">6</span></div>
+      <div class="nav-item">▪ Normalization Log</div>
+      <div class="sb-section">Asset Intelligence</div>
+      <div class="nav-item">▪ CMDB <span class="nbadge">2,340</span></div>
+      <div class="nav-item">▪ Agent Status <span class="nbadge alert">2 Stale</span></div>
+      <div class="sb-section">Prioritization</div>
+      <div class="nav-item">▪ KEV Watch <span class="nbadge alert">14</span></div>
+      <div class="nav-item">▪ Risk Scoring</div>
+      <div class="nav-item">▪ FISMA Boundaries</div>
+      <div class="sb-section">AI Assistant</div>
+      <div class="nav-item ai-active">▪ Ask VulnOps AI</div>
+      <div class="sb-section">Reporting</div>
+      <div class="nav-item">▪ CISO Dashboard</div>
+      <div class="nav-item">▪ POA&M Export</div>
+      <div class="sb-section">Security</div>
+      <div class="nav-item">▪ Audit Log</div>
+      <div class="nav-item">▪ Access Control</div>
+      <div class="sb-section">Actions — Phase 2</div>
+      <div class="nav-item dim">▪ Ticketing</div>
+      <div class="nav-item dim">▪ POA&M Workflow</div>
+      <div class="nav-item dim">▪ SLA Notifications</div>
+    </div>
+
+    <!-- Main -->
+    <div class="main">
+
+      <!-- Architecture -->
+      <div class="arch-banner">
+        <h3>Platform Architecture — v4</h3>
+        <div class="arch-layers">
+          <div class="arch-layer blue"><h4>1. Ingestion <span>connector framework</span></h4><ul><li>Tenable.sc / .io</li><li>Container scanner</li><li>CISA KEV feed</li><li>NVD / NIST</li><li>Vendor advisories</li><li>+ Add connector</li></ul></div>
+          <div class="arch-arrow">→</div>
+          <div class="arch-layer green"><h4>2. CMDB <span>asset backbone</span></h4><ul><li>Local agent populates</li><li>IP → hostname → owner</li><li>FISMA boundary map</li><li>Criticality ratings</li><li>Staleness tracking</li></ul></div>
+          <div class="arch-arrow">→</div>
+          <div class="arch-layer blue"><h4>3. Normalization <span>correlation engine</span></h4><ul><li>CVE deduplication</li><li>Cross-source merge</li><li>Asset mapping</li><li>CVSS enrichment</li><li>KEV cross-reference</li></ul></div>
+          <div class="arch-arrow">→</div>
+          <div class="arch-layer blue"><h4>4. Prioritization</h4><ul><li>Risk scoring</li><li>BOD 22-01 SLA engine</li><li>KEV flagging</li><li>Asset criticality weight</li><li>FISMA boundary view</li></ul></div>
+          <div class="arch-arrow">→</div>
+          <div class="arch-layer purple"><h4>5. AI Assistant <span>model-agnostic</span></h4><ul><li>Model router layer</li><li>Local: Llama / Mistral</li><li>External: GPT-4o, etc.</li><li>NL query interface</li><li>Report drafting</li></ul></div>
+          <div class="arch-arrow">→</div>
+          <div class="arch-layer dim-l"><h4>6. Actions <span>phase 2</span></h4><ul><li>Ticketing integration</li><li>POA&M workflow</li><li>SLA notifications</li><li>Remediation tracking</li></ul></div>
+        </div>
+        <div class="sec-badges">
+          <div class="sec-badge">🔐 Entra ID SSO + MFA <span class="sbv">ACTIVE</span></div>
+          <div class="sec-badge">🔒 Data at Rest <span class="sbv">AES-256</span></div>
+          <div class="sec-badge">🔗 Data in Transit <span class="sbv">TLS 1.3</span></div>
+          <div class="sec-badge">📋 Audit Logging <span class="sbv">ALL EVENTS</span></div>
+          <div class="sec-badge">🏛️ FedRAMP <span class="sbv">GOV CLOUD</span></div>
+          <div class="sec-badge">⬡ AI Backend <span class="sbv" style="color:#c084fc;">LLAMA 3.1 LOCAL</span></div>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-row">
+        <div class="kpi c"><div class="klabel">Critical</div><div class="kval">312</div><div class="ksub">↑ 24 from last scan</div></div>
+        <div class="kpi h"><div class="klabel">High</div><div class="kval">1,847</div><div class="ksub">across all sources</div></div>
+        <div class="kpi k"><div class="klabel">KEV Matches</div><div class="kval">41</div><div class="ksub">14 past due date</div></div>
+        <div class="kpi a"><div class="klabel">CMDB Assets</div><div class="kval">2,340</div><div class="ksub">96% mapped to vulns</div></div>
+        <div class="kpi s"><div class="klabel">Active Sources</div><div class="kval">6</div><div class="ksub">last sync: 2h ago</div></div>
+      </div>
+
+      <!-- AI Assistant Panel -->
+      <div class="ai-panel">
+        <div class="ph">
+          <span class="ptitle">AI Assistant</span>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span class="ai-backend-badge"><span class="dot"></span>Llama 3.1 70B · Self-Hosted · GovCloud</span>
+            <span class="ptag" style="background:rgba(168,85,247,0.1);color:#c084fc;border:1px solid rgba(168,85,247,0.3);">MODEL ROUTER</span>
+          </div>
+        </div>
+        <div class="ai-chat">
+          <div class="ai-msg user">
+            <div class="ai-label">You</div>
+            Show me all critical KEV vulnerabilities on HVA assets that are past their remediation deadline.
+          </div>
+          <div class="ai-msg bot">
+            <div class="ai-label">VulnOps AI · Llama 3.1 · Local</div>
+            Found <strong style="color:var(--red);">8 critical KEV vulnerabilities</strong> on HVA-Core assets past their BOD 22-01 deadline. Highest priority: <strong style="color:#6699ff;">CVE-2023-44487</strong> (HTTP/2 Rapid Reset) on dc01.agency.gov and 5 others — 18 days overdue. System owner: Infra Team. Shall I draft a notification memo or a POA&M entry?
+          </div>
+        </div>
+        <div class="ai-suggestions">
+          <div class="ai-sug">Summarize this week's new criticals</div>
+          <div class="ai-sug">Which FISMA boundary has most exposure?</div>
+          <div class="ai-sug">Draft BOD 22-01 status report</div>
+          <div class="ai-sug">Explain CVE-2024-21762 in plain language</div>
+        </div>
+        <div class="ai-input-row">
+          <input class="ai-input" placeholder="Ask about vulnerabilities, assets, compliance posture..." />
+          <button class="ai-send">Send ↵</button>
+        </div>
+      </div>
+
+      <!-- Connectors + CMDB -->
+      <div class="two-col">
+        <div class="panel">
+          <div class="ph"><span class="ptitle">Ingestion Connectors</span><span class="ptag blue">CONNECTOR FRAMEWORK</span></div>
+          <div class="connector-grid">
+            <div class="connector on"><div class="cdot on"></div><div><div class="cname">Tenable.sc</div><div class="cmeta">sync 2h ago · 4,821 vulns</div></div></div>
+            <div class="connector on"><div class="cdot on"></div><div><div class="cname">CISA KEV Feed</div><div class="cmeta">sync 6h ago · 1,071 entries</div></div></div>
+            <div class="connector on"><div class="cdot on"></div><div><div class="cname">Container Scanner</div><div class="cmeta">sync 1h ago · 312 findings</div></div></div>
+            <div class="connector on"><div class="cdot on"></div><div><div class="cname">NVD / NIST</div><div class="cmeta">sync 12h ago · enrichment</div></div></div>
+            <div class="connector off"><div class="cdot off"></div><div><div class="cname">Vendor Advisory RSS</div><div class="cmeta">configured · not polling</div></div></div>
+            <div class="connector add">＋ Add Connector</div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="ph"><span class="ptitle">CMDB — Asset Backbone</span><span class="ptag green">AGENT-POPULATED</span></div>
+          <div class="cmdb-stats">
+            <div class="cstat"><div class="cn">2,340</div><div class="cl">Total Assets</div></div>
+            <div class="cstat"><div class="cn">18</div><div class="cl">FISMA Boundaries</div></div>
+            <div class="cstat"><div class="cn">96%</div><div class="cl">Vuln-Mapped</div></div>
+          </div>
+          <div class="agent-bar"><div class="pulse"></div>Local CMDB agent running · last sync 45 min ago · encrypted channel</div>
+          <table class="vtable">
+            <thead><tr><th>Hostname</th><th>Owner</th><th>Boundary</th><th>Crit.</th><th>Vulns</th></tr></thead>
+            <tbody>
+              <tr><td class="cve" style="color:var(--text)">dc01.agency.gov</td><td>Infra</td><td>HVA-Core</td><td><span class="sev crit">HIGH</span></td><td>47</td></tr>
+              <tr><td class="cve" style="color:var(--text)">app-srv-14</td><td>AppDev</td><td>Prod-DMZ</td><td><span class="sev high">MED</span></td><td>23</td></tr>
+              <tr><td class="cve" style="color:var(--text)">db-cluster-02</td><td>Data</td><td>HVA-Core</td><td><span class="sev crit">HIGH</span></td><td>61</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Normalization + KEV -->
+      <div class="two-col">
+        <div class="panel">
+          <div class="ph"><span class="ptitle">Normalization & Correlation</span><span class="ptag blue">DEDUP ENGINE</span></div>
+          <div style="font-size:10px;color:var(--dim);margin-bottom:10px;font-family:var(--mono);">Same CVE from multiple sources → single enriched record</div>
+          <div class="norm-row"><div class="ncve">CVE-2024-21762</div><div class="nsrcs"><span class="nsrc">Tenable</span><span class="nsrc">Container</span><span class="nsrc">NVD</span></div><div class="nresult">→ 1 record</div><div class="nasset">dc01.agency.gov</div></div>
+          <div class="norm-row"><div class="ncve">CVE-2023-44487</div><div class="nsrcs"><span class="nsrc">Tenable</span><span class="nsrc">KEV</span></div><div class="nresult">→ 1 record</div><div class="nasset">app-srv-14</div></div>
+          <div class="norm-row"><div class="ncve">CVE-2024-3400</div><div class="nsrcs"><span class="nsrc">Vendor</span><span class="nsrc">KEV</span><span class="nsrc">NVD</span></div><div class="nresult">→ 1 record</div><div class="nasset">fw-edge-01</div></div>
+          <div class="norm-row"><div class="ncve">CVE-2024-0519</div><div class="nsrcs"><span class="nsrc">Container</span><span class="nsrc">NVD</span></div><div class="nresult">→ 1 record</div><div class="nasset">k8s-node-03</div></div>
+          <div style="margin-top:10px;padding:9px;background:var(--surface2);border-radius:6px;font-size:10px;color:var(--mid);font-family:var(--mono);">Today: <strong style="color:var(--green)">847 duplicates collapsed</strong> · <strong style="color:var(--red)">62 unmapped assets</strong> flagged</div>
+        </div>
+        <div class="panel">
+          <div class="ph"><span class="ptitle">KEV Watch — BOD 22-01</span><span class="ptag yellow">FEDERAL COMPLIANCE</span></div>
+          <div class="kev-item"><div class="kbar r"></div><div><div class="kcve">CVE-2023-44487 <span class="kflag">KEV</span></div><div class="kdesc">HTTP/2 Rapid Reset · Apache, nginx · 6 assets</div><div class="kdue r">⚠ 18 days overdue</div></div></div>
+          <div class="kev-item"><div class="kbar r"></div><div><div class="kcve">CVE-2024-3400 <span class="kflag">KEV</span></div><div class="kdesc">PAN-OS Command Injection · 2 assets</div><div class="kdue r">⚠ 4 days overdue</div></div></div>
+          <div class="kev-item"><div class="kbar y"></div><div><div class="kcve">CVE-2024-21762 <span class="kflag">KEV</span></div><div class="kdesc">Fortinet FortiOS SSL VPN · 3 assets</div><div class="kdue y">⏱ Due in 6 days</div></div></div>
+          <div class="kev-item"><div class="kbar y"></div><div><div class="kcve">CVE-2024-0519 <span class="kflag">KEV</span></div><div class="kdesc">Chrome V8 Type Confusion · 140 endpoints</div><div class="kdue y">⏱ Due in 12 days</div></div></div>
+        </div>
+      </div>
+
+      <!-- Vuln table -->
+      <div class="panel">
+        <div class="ph">
+          <span class="ptitle">Vulnerability List — Normalized View</span>
+          <div style="display:flex;gap:6px;"><span class="ptag gray">CRIT + HIGH</span><span class="ptag yellow">KEV ONLY</span><span class="ptag blue">ALL SOURCES</span></div>
+        </div>
+        <table class="vtable">
+          <thead><tr><th>CVE</th><th>Severity</th><th>Description</th><th>Sources</th><th>Assets</th><th>KEV</th><th>CVSS</th><th>Detected</th></tr></thead>
+          <tbody>
+            <tr><td class="cve">CVE-2024-21762</td><td><span class="sev crit">CRIT</span></td><td>Fortinet FortiOS SSL VPN RCE</td><td><span class="sbadge">Tenable</span> <span class="sbadge">KEV</span> <span class="sbadge">NVD</span></td><td>3</td><td><span class="kflag">KEV</span></td><td>9.8</td><td>Jan 12</td></tr>
+            <tr><td class="cve">CVE-2023-44487</td><td><span class="sev crit">CRIT</span></td><td>HTTP/2 Rapid Reset Attack</td><td><span class="sbadge">Tenable</span> <span class="sbadge">Container</span> <span class="sbadge">KEV</span></td><td>6</td><td><span class="kflag">KEV</span></td><td>7.5</td><td>Oct 10</td></tr>
+            <tr><td class="cve">CVE-2024-3400</td><td><span class="sev crit">CRIT</span></td><td>PAN-OS Command Injection</td><td><span class="sbadge">Vendor</span> <span class="sbadge">KEV</span> <span class="sbadge">NVD</span></td><td>2</td><td><span class="kflag">KEV</span></td><td>10.0</td><td>Apr 12</td></tr>
+            <tr><td class="cve">CVE-2024-0519</td><td><span class="sev crit">CRIT</span></td><td>Chrome V8 Type Confusion</td><td><span class="sbadge">Container</span> <span class="sbadge">NVD</span></td><td>140</td><td><span class="kflag">KEV</span></td><td>8.8</td><td>Jan 16</td></tr>
+            <tr><td class="cve">CVE-2024-1709</td><td><span class="sev high">HIGH</span></td><td>ConnectWise Auth Bypass</td><td><span class="sbadge">Tenable</span> <span class="sbadge">NVD</span></td><td>1</td><td></td><td>8.4</td><td>Feb 21</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Deferred -->
+      <div class="def-banner">
+        <div><h4>Action Layer — Reserved for Phase 2</h4><p>Ticketing, POA&M workflow, and remediation tracking will be built after the data surfacing layer is stable.</p></div>
+        <div class="def-chips"><div class="def-chip">Jira / ServiceNow</div><div class="def-chip">POA&M Workflow</div><div class="def-chip">SLA Notifications</div><div class="def-chip">Remediation Tracking</div></div>
+      </div>
+
+    </div><!-- /main -->
+  </div><!-- /app-inner -->
+</div><!-- /appView -->
+
+<!-- ══════════ PREFS OVERLAY ══════════ -->
+<div class="overlay" id="overlay">
+  <div class="prefs-panel">
+    <h3>Workspace Preferences</h3>
+    <div class="prefs-sub">Customize layout, branding, and AI backend</div>
+
+    <div class="prefs-section">Branding</div>
+    <div class="logo-upload">↑ Upload Agency Logo</div>
+    <div class="theme-row">
+      <div class="theme-chip active">Dark</div>
+      <div class="theme-chip">Light</div>
+      <div class="theme-chip">High Contrast</div>
+    </div>
+
+    <div class="prefs-section">AI Backend — Model Router</div>
+    <div class="model-opts">
+      <div class="model-opt sel" onclick="selectModel(this)">
+        <div class="radio"></div>
+        <div><div class="mname">Llama 3.1 70B · Self-Hosted</div><div class="mdesc">GovCloud (us-gov-east-1) · No external API calls · Zero data egress</div></div>
+        <span class="mbadge local">RECOMMENDED</span>
+      </div>
+      <div class="model-opt" onclick="selectModel(this)">
+        <div class="radio"></div>
+        <div><div class="mname">Mistral Large · Self-Hosted</div><div class="mdesc">Alternative local model · Lighter compute footprint</div></div>
+        <span class="mbadge local">LOCAL</span>
+      </div>
+      <div class="model-opt" onclick="selectModel(this)">
+        <div class="radio"></div>
+        <div><div class="mname">OpenAI GPT-4o</div><div class="mdesc">External API · Requires data sharing agreement review</div></div>
+        <span class="mbadge ext">EXTERNAL</span>
+      </div>
+      <div class="model-opt" onclick="selectModel(this)">
+        <div class="radio"></div>
+        <div><div class="mname">Anthropic Claude</div><div class="mdesc">External API · Currently restricted per agency policy</div></div>
+        <span class="mbadge risk">RESTRICTED</span>
+      </div>
+    </div>
+    <div class="model-note"><strong>⚠ Federal note:</strong> Self-hosted models are strongly preferred. External API backends transmit query data off-premises — confirm with your AO before enabling. The model router is a config-level switch; no code changes required to swap backends.</div>
+
+    <div class="prefs-section">Dashboard Panels</div>
+    <div class="pref-row"><span class="pname">Architecture Diagram</span><div class="pcontrols"><button class="toggle"></button></div></div>
+    <div class="pref-row"><span class="pname">AI Assistant Panel</span><div class="pcontrols"><button class="toggle"></button></div></div>
+    <div class="pref-row"><span class="pname">KEV Watch</span><div class="pcontrols"><span class="drag-handle">⠿</span><button class="toggle"></button></div></div>
+    <div class="pref-row"><span class="pname">Normalization View</span><div class="pcontrols"><span class="drag-handle">⠿</span><button class="toggle"></button></div></div>
+    <div class="pref-row"><span class="pname">CMDB Panel</span><div class="pcontrols"><span class="drag-handle">⠿</span><button class="toggle"></button></div></div>
+    <div class="pref-row"><span class="pname">Vulnerability Table</span><div class="pcontrols"><span class="drag-handle">⠿</span><button class="toggle"></button></div></div>
+
+    <button class="prefs-close" onclick="togglePrefs()">Save &amp; Close</button>
+  </div>
+</div>
+
+<script>
+function localLogin(){
+  const user = document.getElementById('local-user').value.trim();
+  const pass = document.getElementById('local-pass').value;
+  const err  = document.getElementById('login-error');
+  // Dev credentials — replace with real API call in backend
+  if(user === 'admin' && pass === 'ironfist'){
+    err.style.display = 'none';
+    goApp();
+  } else {
+    err.style.display = 'block';
+  }
+}
+// Allow Enter key to submit local login
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Enter'){
+    const lv = document.getElementById('loginView');
+    if(lv && lv.classList.contains('active')) localLogin();
+  }
+});
+function goApp(){
+  document.getElementById('loginView').classList.remove('active');
+  document.getElementById('appView').classList.add('active');
+}
+function togglePrefs(){
+  document.getElementById('overlay').classList.toggle('active');
+}
+document.getElementById('overlay').addEventListener('click',function(e){
+  if(e.target===this) this.classList.remove('active');
+});
+function selectModel(el){
+  document.querySelectorAll('.model-opt').forEach(o=>o.classList.remove('sel'));
+  el.classList.add('sel');
+}
+document.querySelectorAll('.toggle').forEach(t=>{
+  t.addEventListener('click',function(e){
+    e.stopPropagation();
+    this.classList.toggle('off');
+  });
+});
+document.querySelectorAll('.theme-chip').forEach(c=>{
+  c.addEventListener('click',function(){
+    document.querySelectorAll('.theme-chip').forEach(x=>x.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+// Global search
+const cveData=[
+  {cve:'CVE-2024-21762',sev:'CRIT',desc:'Fortinet FortiOS SSL VPN RCE',assets:3},
+  {cve:'CVE-2023-44487',sev:'CRIT',desc:'HTTP/2 Rapid Reset Attack',assets:6},
+  {cve:'CVE-2024-3400',sev:'CRIT',desc:'PAN-OS Command Injection',assets:2},
+  {cve:'CVE-2024-0519',sev:'CRIT',desc:'Chrome V8 Type Confusion',assets:140},
+  {cve:'CVE-2024-1709',sev:'HIGH',desc:'ConnectWise Auth Bypass',assets:1},
+];
+const hostData=[
+  {host:'dc01.agency.gov',boundary:'HVA-Core',owner:'Infra',vulns:47},
+  {host:'app-srv-14',boundary:'Prod-DMZ',owner:'AppDev',vulns:23},
+  {host:'db-cluster-02',boundary:'HVA-Core',owner:'Data',vulns:61},
+  {host:'fw-edge-01',boundary:'Perimeter',owner:'Infra',vulns:12},
+  {host:'k8s-node-03',boundary:'Containers',owner:'AppDev',vulns:34},
+];
+const sevColor={CRIT:'var(--red)',HIGH:'var(--orange)',MED:'var(--yellow)'};
+
+function handleSearch(val){
+  const drop=document.getElementById('gsearch-drop');
+  const v=val.trim().toLowerCase();
+  if(!v){drop.classList.remove('open');return;}
+  drop.classList.add('open');
+
+  // Detect conversational vs keyword
+  const isConversational = v.length>18 || /show|find|list|hosts?|which|what|running|with|affected|past|overdue|all/i.test(val);
+
+  let html='';
+
+  // CVE matches
+  const cveMatches=cveData.filter(d=>d.cve.toLowerCase().includes(v)||d.desc.toLowerCase().includes(v));
+  if(cveMatches.length){
+    html+=`<div class="gsd-section">CVEs</div>`;
+    cveMatches.slice(0,3).forEach(d=>{
+      html+=`<div class="gsd-item">
+        <span class="gsd-icon">⚠</span>
+        <div class="gsd-main">${d.cve}<div class="gsd-sub">${d.desc} · ${d.assets} asset${d.assets!==1?'s':''}</div></div>
+        <span class="gsd-badge" style="background:rgba(255,77,77,0.1);color:var(--red);border:1px solid rgba(255,77,77,0.2)">${d.sev}</span>
+      </div>`;
+    });
+  }
+
+  // Host matches
+  const hostMatches=hostData.filter(d=>d.host.toLowerCase().includes(v)||d.boundary.toLowerCase().includes(v)||d.owner.toLowerCase().includes(v));
+  if(hostMatches.length){
+    html+=`<div class="gsd-section">Assets</div>`;
+    hostMatches.slice(0,3).forEach(d=>{
+      html+=`<div class="gsd-item">
+        <span class="gsd-icon">⬡</span>
+        <div class="gsd-main">${d.host}<div class="gsd-sub">${d.boundary} · ${d.owner} · ${d.vulns} vulns</div></div>
+        <span class="gsd-badge" style="background:var(--surface2);color:var(--mid);border:1px solid var(--border2)">${d.boundary}</span>
+      </div>`;
+    });
+  }
+
+  // AI query row — always show for conversational, or when no direct matches
+  if(isConversational || (!cveMatches.length && !hostMatches.length)){
+    const preview = val.length>48 ? val.slice(0,48)+'…' : val;
+    html+=`<div class="gsd-ai-row">
+      <span class="gsd-ai-icon">⬡</span>
+      <div class="gsd-ai-label">Ask AI: <em>"${preview}"</em></div>
+      <span style="font-family:var(--mono);font-size:9px;color:rgba(168,85,247,0.6);">Llama 3.1 ↵</span>
+    </div>`;
+  }
+
+  if(!html) html=`<div class="gsd-ai-row"><span class="gsd-ai-icon">⬡</span><div class="gsd-ai-label">Ask AI: <em>"${val.length>48?val.slice(0,48)+'…':val}"</em></div></div>`;
+  drop.innerHTML=html;
+}
+
+function closeSearch(){
+  document.getElementById('gsearch-drop').classList.remove('open');
+}
+</script>
+</body>
+</html>
