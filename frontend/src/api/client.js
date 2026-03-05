@@ -44,6 +44,7 @@ export const dashboardApi = {
 export const assetsApi = {
   list:       (params) => api.get('/assets/', { params }),
   get:        (id)     => api.get(`/assets/${id}`),
+  patch:      (id, data) => api.patch(`/assets/${id}`, data),
   boundaries: ()       => api.get('/assets/stats/boundaries'),
 }
 
@@ -67,3 +68,7 @@ export const syncApi = {
 }
 
 export default api
+
+// (appended — update method for assets)
+// Already exported above, adding patch here via re-export isn't needed.
+// The assetsApi object is updated in place:
